@@ -1,8 +1,11 @@
-define(['backbone', 'app/models/loader'], function (Backbone, Model) {
+/**
+ * Defines a Backbone collection of Bookings
+ */
+define(['backbone', 'app/models/booking'], function (Backbone, Booking) {
 
     return Backbone.Collection.extend({
         url:'rest/bookings',
-        model: Model.Booking,
+        model: Booking,
         id:'id'
     });
 });

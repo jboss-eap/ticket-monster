@@ -4,6 +4,7 @@ import static javax.persistence.CascadeType.ALL;
 import static javax.persistence.FetchType.EAGER;
 import static javax.persistence.GenerationType.IDENTITY;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -19,6 +20,7 @@ import javax.validation.constraints.NotNull;
 
 import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.NotEmpty;
+import org.jboss.errai.common.client.api.annotations.Portable;
 
 /**
  * <p>
@@ -32,8 +34,10 @@ import org.hibernate.validator.constraints.NotEmpty;
  * 
  * @author Marius Bogoevici
  */
+@SuppressWarnings("serial")
 @Entity
-public class Booking {
+@Portable
+public class Booking implements Serializable {
 
     /* Declaration of fields */
 

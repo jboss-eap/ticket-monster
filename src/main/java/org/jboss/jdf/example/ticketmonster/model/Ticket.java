@@ -10,6 +10,8 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.validation.constraints.NotNull;
 
+import org.jboss.errai.common.client.api.annotations.Portable;
+
 /**
  * <p>
  * A ticket represents a seat sold for a particular price.
@@ -25,6 +27,7 @@ import javax.validation.constraints.NotNull;
  */
 @SuppressWarnings("serial")
 @Entity
+@Portable
 public class Ticket implements Serializable {
 
     /* Declaration of fields */
@@ -66,9 +69,7 @@ public class Ticket implements Serializable {
      */
     private float price;
 
-    /**
-     * Np-arg constructor for persistence
-     */
+    /** No-arg constructor for persistence */
     public Ticket() {
 
     }

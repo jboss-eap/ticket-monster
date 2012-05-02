@@ -14,6 +14,7 @@ import javax.validation.constraints.NotNull;
 
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.hibernate.validator.constraints.NotEmpty;
+import org.jboss.errai.common.client.api.annotations.Portable;
 
 /**
  * <p>
@@ -37,6 +38,7 @@ import org.hibernate.validator.constraints.NotEmpty;
 @Table(uniqueConstraints=@UniqueConstraint(columnNames={"name", "venue_id"}))
 // TODO Document @JsonIgnoreProperties
 @JsonIgnoreProperties({ "venue", "sectionRows" })
+@Portable
 public class Section implements Serializable {
 
     /* Declaration of fields */
