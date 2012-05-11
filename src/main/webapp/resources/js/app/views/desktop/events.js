@@ -1,25 +1,28 @@
-define(['backbone', 'utilities', 'bootstrap'], function (Backbone, utilities) {
+define([
+    'backbone',
+    'utilities',
+    'text!../../../../templates/desktop/events.html',
+    'backbone'
+], function (
+    Backbone,
+    utilities,
+    eventsTemplate) {
 
-    var EventMenuView = Backbone.View.extend({
+    var EventsView = Backbone.View.extend({
         events:{
             "click a":"update"
         },
-        tagName:'div',
         render:function () {
-            var self = this
-            $(this.el).empty()
-            var current_category = null
-            _.each(this.model.models, function (event) {
-                var model_category = event.get('category')
-                if (current_category !== model_category.id) {
-                    $(self.el).append(utilities.renderTemplate($('#category-title'), model_category));
-                    current_category = model_category.id;
-                }
-                var view = new EventSummaryLineView({summaryView:self.options.summaryView, model:event});
-                $("#category-" + current_category).append(view.render().el);
-            })
+            var categories = _.uniq(
+                _.map(this.model.models, function(model){
+                    return model.get('category')
+                }, function(item){
+                    return item.id
+                }));
+            utilities.applyTemplate($(this.el), eventsTemplate, {categories:categories, model:this.model})
+            $(this.el).find('.item:first').addClass('active');
             $(".collapse").collapse()
-            $("a[rel='popover']").popover({trigger:'hover'})
+            $("a[rel='popover']").popover({trigger:'hover'});
             return this
         },
         update:function () {
@@ -27,41 +30,5 @@ define(['backbone', 'utilities', 'bootstrap'], function (Backbone, utilities) {
         }
     });
 
-    var EventSummaryLineView = Backbone.View.extend({
-        tagName:'div',
-        events:{
-            "click":"notify"
-        },
-        render:function () {
-            utilities.applyTemplate($(this.el), $("#event-summary"), this.model.attributes)
-            return this;
-        },
-        notify:function () {
-            this.options.summaryView.render(this.model)
-        }
-    });
-
-    var EventSummaryView = Backbone.View.extend({
-        render:function (data) {
-            if (data) {
-                utilities.applyTemplate($(this.el), $("#event-summary-view"), data.attributes)
-            }
-            else {
-                utilities.applyTemplate($(this.el), $("#event-carousel"), {models:this.model.models});
-                $(this.el).find('.item:first').addClass('active')
-            }
-            return this
-        }
-    });
-
-
-    return  Backbone.View.extend({
-        render:function () {
-            utilities.applyTemplate($(this.el), $('#main-view'), {})
-            var summaryView = new EventSummaryView({model:this.model});
-            $("#itemSummary").append(summaryView.render().el)
-            this.menuView = new EventMenuView({summaryView:summaryView, model:this.model, el:$("#itemMenu")});
-            this.menuView.render()
-        }
-    });
+    return  EventsView;
 });

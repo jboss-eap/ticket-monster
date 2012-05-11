@@ -1,13 +1,19 @@
-define(['backbone','utilities','bootstrap'],
-    function (Backbone, utilities) {
+define([
+    'backbone',
+    'utilities',
+    'text!../../../../templates/desktop/booking-details.html'
+], function (Backbone, utilities, BookingDetailsTemplate) {
 
-    return Backbone.View.extend({
+    var BookingDetailView = Backbone.View.extend({
         render:function () {
             var self = this;
+            // retrieve the details
             $.getJSON('rest/shows/performance/' + this.model.attributes.performance.id, function (retrievedPerformance) {
-                utilities.applyTemplate($(self.el), $("#booking-details"), {booking:self.model.attributes, performance:retrievedPerformance});
+                utilities.applyTemplate($(self.el), BookingDetailsTemplate, {booking:self.model.attributes, performance:retrievedPerformance});
             });
             return this;
         }
     });
+
+    return BookingDetailView;
 });

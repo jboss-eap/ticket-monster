@@ -106,7 +106,7 @@ public class Event implements Serializable {
      * 
      */
     @ManyToOne
-    private MediaItem picture;
+    private MediaItem mediaItem;
 
     /**
      * <p>
@@ -123,11 +123,6 @@ public class Event implements Serializable {
     @ManyToOne
     @NotNull
     private EventCategory category;
-
-    /**
-     * TODO
-     */
-    private boolean major;
 
     /* Boilerplate getters and setters */
 
@@ -147,12 +142,12 @@ public class Event implements Serializable {
         this.name = name;
     }
 
-    public MediaItem getPicture() {
-        return picture;
+    public MediaItem getMediaItem() {
+        return mediaItem;
     }
 
-    public void setPicture(MediaItem picture) {
-        this.picture = picture;
+    public void setMediaItem(MediaItem picture) {
+        this.mediaItem = picture;
     }
 
     public EventCategory getCategory() {
@@ -161,14 +156,6 @@ public class Event implements Serializable {
 
     public void setCategory(EventCategory category) {
         this.category = category;
-    }
-
-    public boolean isMajor() {
-        return major;
-    }
-
-    public void setMajor(boolean major) {
-        this.major = major;
     }
 
     public String getDescription() {

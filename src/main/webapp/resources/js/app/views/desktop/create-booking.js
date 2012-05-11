@@ -1,84 +1,67 @@
-define([ 'backbone','utilities', 'bootstrap'], function (Backbone, utilities) {
-
-
-    var SectionSelectorView = Backbone.View.extend({
-        render:function () {
-            var self = this;
-            utilities.applyTemplate($(this.el), $("#select-section"), { sections:_.uniq(_.sortBy(_.pluck(self.model.priceCategories, 'section'), function (item) {
-                return item.id;
-            }), true, function (item) {
-                return item.id;
-            })});
-            return this;
-        }
-    });
-
-    var TicketCategoryView = Backbone.View.extend({
-        events:{
-            "change input":"onChange"
-        },
-        render:function () {
-            utilities.applyTemplate($(this.el), $('#ticket-entry'), this.model);
-            return this;
-        },
-        onChange:function (event) {
-            var value = event.currentTarget.value;
-            if ($.isNumeric(value) && value > 0) {
-                this.model.quantity = value;
-            }
-            else {
-                delete this.model.quantity;
-            }
-        }
-    });
+define([
+    'backbone',
+    'utilities',
+    'require',
+    'text!../../../../templates/desktop/booking-confirmation.html',
+    'text!../../../../templates/desktop/create-booking.html',
+    'text!../../../../templates/desktop/ticket-categories.html',
+    'text!../../../../templates/desktop/ticket-summary-view.html',
+    'bootstrap'
+],function (
+    Backbone,
+    utilities,
+    require,
+    bookingConfirmationTemplate,
+    createBookingTemplate,
+    ticketEntriesTemplate,
+    ticketSummaryViewTemplate){
 
 
     var TicketCategoriesView = Backbone.View.extend({
         id:'categoriesView',
+        events:{
+            "change input":"onChange"
+        },
         render:function () {
             if (this.model != null) {
-                var priceCategories = _.map(this.model, function (item) {
-                    return item.priceCategory;
+                var ticketPrices = _.map(this.model, function (item) {
+                    return item.ticketPrice;
                 });
-                utilities.applyTemplate($(this.el), $('#ticket-entries'), {priceCategories:priceCategories});
-
-                _.each(this.model, function (model) {
-                    $("#ticket-category-input-" + model.priceCategory.id).append(new TicketCategoryView({model:model}).render().el);
-
-                });
+                utilities.applyTemplate($(this.el), ticketEntriesTemplate, {ticketPrices:ticketPrices});
             } else {
                 $(this.el).empty();
             }
             return this;
+        },
+        onChange:function (event) {
+            var value = event.currentTarget.value;
+            var ticketPriceId = $(event.currentTarget).data("tm-id");
+            var modifiedModelEntry = _.find(this.model, function(item) { return item.ticketPrice.id == ticketPriceId});
+            if ($.isNumeric(value) && value > 0) {
+                modifiedModelEntry.quantity = parseInt(value);
+            }
+            else {
+                delete modifiedModelEntry.quantity;
+            }
         }
     });
 
-    var TicketSummaryLineView = Backbone.View.extend({
+    var TicketSummaryView = Backbone.View.extend({
         tagName:'tr',
         events:{
             "click i":"removeEntry"
         },
         render:function () {
-            utilities.applyTemplate($(this.el), $('#ticket-request-summary'), {ticketRequest:this.model.ticketRequest});
-            return this;
+            var self = this;
+            utilities.applyTemplate($(this.el), ticketSummaryViewTemplate, this.model.bookingRequest);
         },
         removeEntry:function () {
             this.model.tickets.splice(this.model.index, 1);
         }
     });
 
-    var TicketSummaryView = Backbone.View.extend({
-        render:function () {
-            var self = this;
-            utilities.applyTemplate($(this.el), $('#ticket-summary-view'), this.model.bookingRequest);
-            _.each(this.model.bookingRequest.tickets, function (ticketRequest, index, tickets) {
-                $('#ticketRequestSummary')
-                    .append(new TicketSummaryLineView({model:{ticketRequest:ticketRequest, index:index, tickets:tickets, parentView:self}}).render().el);
-            });
-        }
-    });
+    var CreateBookingView = Backbone.View.extend({
 
-    return Backbone.View.extend({
         events:{
             "click input[name='submit']":"save",
             "change select":"refreshPrices",
@@ -94,9 +77,14 @@ define([ 'backbone','utilities', 'bootstrap'], function (Backbone, utilities) {
                 self.currentPerformance = _.find(selectedShow.performances, function (item) {
                     return item.id == self.model.performanceId;
                 });
-                utilities.applyTemplate($(self.el), $("#create-booking"), { show:selectedShow,
+
+                var id = function (item) {return item.id;};
+                // prepare a list of sections to populate the dropdown
+                var sections = _.uniq(_.sortBy(_.pluck(selectedShow.ticketPrices, 'section'), id), true, id);
+                utilities.applyTemplate($(self.el), createBookingTemplate, {
+                    sections:sections,
+                    show:selectedShow,
                     performance:self.currentPerformance});
-                self.selectorView = new SectionSelectorView({model:selectedShow, el:$("#sectionSelectorPlaceholder")}).render();
                 self.ticketCategoriesView = new TicketCategoriesView({model:{}, el:$("#ticketCategoriesViewPlaceholder") });
                 self.ticketSummaryView = new TicketSummaryView({model:self.model, el:$("#ticketSummaryView")});
                 self.show = selectedShow;
@@ -106,21 +94,21 @@ define([ 'backbone','utilities', 'bootstrap'], function (Backbone, utilities) {
             });
         },
         refreshPrices:function (event) {
-            var priceCategories = _.filter(this.show.priceCategories, function (item) {
+            var ticketPrices = _.filter(this.show.ticketPrices, function (item) {
                 return item.section.id == event.currentTarget.value;
             });
-            var priceCategoryInputs = new Array();
-            _.each(priceCategories, function (priceCategory) {
-            	priceCategoryInputs.push({priceCategory:priceCategory});
+            var ticketPriceInputs = new Array();
+            _.each(ticketPrices, function (ticketPrice) {
+                ticketPriceInputs.push({ticketPrice:ticketPrice});
             });
-            this.ticketCategoriesView.model = priceCategoryInputs;
+            this.ticketCategoriesView.model = ticketPriceInputs;
             this.ticketCategoriesView.render();
         },
         save:function (event) {
             var bookingRequest = {ticketRequests:[]};
             var self = this;
             bookingRequest.ticketRequests = _.map(this.model.bookingRequest.tickets, function (ticket) {
-                return {priceCategory:ticket.priceCategory.id, quantity:ticket.quantity}
+                return {ticketPrice:ticket.ticketPrice.id, quantity:ticket.quantity}
             });
             bookingRequest.email = this.model.bookingRequest.email;
             bookingRequest.performance = this.model.performanceId
@@ -132,7 +120,7 @@ define([ 'backbone','utilities', 'bootstrap'], function (Backbone, utilities) {
                 success:function (booking) {
                     this.model = {}
                     $.getJSON('rest/shows/performance/' + booking.performance.id, function (retrievedPerformance) {
-                        utilities.applyTemplate($(self.el), $("#booking-confirmation"), {booking:booking, performance:retrievedPerformance })
+                        utilities.applyTemplate($(self.el), bookingConfirmationTemplate, {booking:booking, performance:retrievedPerformance })
                     });
                 }}).error(function (error) {
                     if (error.status == 400 || error.status == 409) {
@@ -154,37 +142,36 @@ define([ 'backbone','utilities', 'bootstrap'], function (Backbone, utilities) {
                 if (model.quantity != undefined) {
                     var found = false;
                     _.each(self.model.bookingRequest.tickets, function (ticket) {
-                        if (ticket.priceCategory.id == model.priceCategory.id) {
+                        if (ticket.ticketPrice.id == model.ticketPrice.id) {
                             ticket.quantity += model.quantity;
                             found = true;
                         }
                     });
                     if (!found) {
-                        self.model.bookingRequest.tickets.push({priceCategory:model.priceCategory, quantity:model.quantity});
+                        self.model.bookingRequest.tickets.push({ticketPrice:model.ticketPrice, quantity:model.quantity});
                     }
                 }
             });
             this.ticketCategoriesView.model = null;
             $('option:selected', 'select').removeAttr('selected');
             this.ticketCategoriesView.render();
-            this.selectorView.render();
             this.updateQuantities();
         },
         updateQuantities:function () {
             // make sure that tickets are sorted by section and ticket category
             this.model.bookingRequest.tickets.sort(function (t1, t2) {
-                if (t1.priceCategory.section.id != t2.priceCategory.section.id) {
-                    return t1.priceCategory.section.id - t2.priceCategory.section.id;
+                if (t1.ticketPrice.section.id != t2.ticketPrice.section.id) {
+                    return t1.ticketPrice.section.id - t2.ticketPrice.section.id;
                 }
                 else {
-                    return t1.priceCategory.ticketCategory.id - t2.priceCategory.ticketCategory.id;
+                    return t1.ticketPrice.ticketCategory.id - t2.ticketPrice.ticketCategory.id;
                 }
             });
 
             this.model.bookingRequest.totals = _.reduce(this.model.bookingRequest.tickets, function (totals, ticketRequest) {
                 return {
                     tickets:totals.tickets + ticketRequest.quantity,
-                    price:totals.price + ticketRequest.quantity * ticketRequest.priceCategory.price
+                    price:totals.price + ticketRequest.quantity * ticketRequest.ticketPrice.price
                 };
             }, {tickets:0, price:0.0});
 
@@ -209,4 +196,6 @@ define([ 'backbone','utilities', 'bootstrap'], function (Backbone, utilities) {
             }
         }
     });
+
+    return CreateBookingView;
 });

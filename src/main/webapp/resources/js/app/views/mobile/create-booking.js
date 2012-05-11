@@ -1,70 +1,57 @@
-define(['backbone', 'utilities', 'require'], function (Backbone, utilities, require) {
+define([
+    'backbone',
+    'utilities',
+    'require',
+    'text!../../../../templates/mobile/booking-details.html',
+    'text!../../../../templates/mobile/create-booking.html',
+    'text!../../../../templates/mobile/confirm-booking.html',
+    'text!../../../../templates/mobile/ticket-entries.html',
+    'text!../../../../templates/mobile/ticket-summary-view.html'
+], function (
+    Backbone,
+    utilities,
+    require,
+    bookingDetailsTemplate,
+    createBookingTemplate,
+    confirmBookingTemplate,
+    ticketEntriesTemplate,
+    ticketSummaryViewTemplate) {
 
-
-    var SectionSelectorView = Backbone.View.extend({
-        render:function () {
-            var self = this;
-            utilities.applyTemplate($(this.el), $("#select-section"), { sections:_.uniq(_.sortBy(_.pluck(self.model.priceCategories, 'section'), function (item) {
-                return item.id;
-            }), true, function (item) {
-                return item.id;
-            })});
-            $(this.el).trigger('pagecreate');
-            return this;
-        }
-    });
-
-    var TicketCategoryView = Backbone.View.extend({
+    var TicketCategoriesView = Backbone.View.extend({
+        id:'categoriesView',
         events:{
             "change input":"onChange"
         },
         render:function () {
-            utilities.applyTemplate($(this.el), $('#ticket-entry'), this.model);
-            $(this.el).trigger('pagecreate');
-            return this;
-        },
-        onChange:function (event) {
-            var value = event.currentTarget.value;
-            if (value != '' && value != 0) {
-                this.model.quantity = parseInt(value);
-            }
-            else {
-                delete this.model.quantity;
-            }
-        }
-    });
-
-
-    var TicketCategoriesView = Backbone.View.extend({
-
-        id:'categoriesView',
-        render:function () {
             var views = {};
 
             if (this.model != null) {
-                var priceCategories = _.map(this.model, function (item) {
-                    return item.priceCategory;
+                var ticketPrices = _.map(this.model, function (item) {
+                    return item.ticketPrice;
                 });
-                utilities.applyTemplate($(this.el), $('#ticket-entries'), {priceCategories:priceCategories});
-
-                _.each(this.model, function (model) {
-                    $("#ticket-category-input-" + model.priceCategory.id).append(new TicketCategoryView({model:model}).render().el);
-
-                });
+                utilities.applyTemplate($(this.el), ticketEntriesTemplate, {ticketPrices:ticketPrices});
             } else {
                 $(this.el).empty();
             }
             $(this.el).trigger('pagecreate');
             return this;
         },
-        updateModel:function () {
-
+        onChange:function (event) {
+            var value = event.currentTarget.value;
+            var ticketPriceId = $(event.currentTarget).data("tm-id");
+            var modifiedModelEntry = _.find(this.model, function(item) { return item.ticketPrice.id == ticketPriceId});
+            if ($.isNumeric(value) && value > 0) {
+                modifiedModelEntry.quantity = parseInt(value);
+            }
+            else {
+                delete modifiedModelEntry.quantity;
+            }
         }
     });
 
      var TicketSummaryView = Backbone.View.extend({
         render:function () {
-            utilities.applyTemplate($(this.el), $('#ticket-summary-view'), this.model.bookingRequest)
+            utilities.applyTemplate($(this.el), ticketSummaryViewTemplate, this.model.bookingRequest)
         }
     });
 
@@ -74,7 +61,7 @@ define(['backbone', 'utilities', 'require'], function (Backbone, utilities, requ
             "click a[id='goBack']":"back"
         },
         render:function () {
-            utilities.applyTemplate($(this.el), $("#confirm-booking"), this.model)
+            utilities.applyTemplate($(this.el), confirmBookingTemplate, this.model)
             this.ticketSummaryView = new TicketSummaryView({model:this.model, el:$("#ticketSummaryView")});
             this.ticketSummaryView.render();
             $(this.el).trigger('pagecreate')
@@ -88,20 +75,20 @@ define(['backbone', 'utilities', 'require'], function (Backbone, utilities, requ
             _.each(this.model.bookingRequest.tickets, function (collection) {
                 _.each(collection, function (model) {
                     if (model.quantity != undefined) {
-                        bookingRequest.ticketRequests.push({priceCategory:model.priceCategory.id, quantity:model.quantity})
+                        bookingRequest.ticketRequests.push({ticketPrice:model.ticketPrice.id, quantity:model.quantity})
                     };
                 })
             });
 
             bookingRequest.email = this.model.email;
-            bookingRequest.performance = this.model.performanceId
+            bookingRequest.performance = this.model.performanceId;
             $.ajax({url:"rest/bookings",
                 data:JSON.stringify(bookingRequest),
                 type:"POST",
                 dataType:"json",
                 contentType:"application/json",
                 success:function (booking) {
-                    utilities.applyTemplate($(self.el), $("#booking-details"), booking)
+                    utilities.applyTemplate($(self.el), bookingDetailsTemplate, booking)
                     $(self.el).trigger('pagecreate');
                 }}).error(function (error) {
                     alert(error);
@@ -111,7 +98,8 @@ define(['backbone', 'utilities', 'require'], function (Backbone, utilities, requ
     });
 
 
-    return Backbone.View.extend({
+    var CreateBookingView = Backbone.View.extend({
+
         events:{
             "click a[id='confirmBooking']":"checkout",
             "change select":"refreshPrices",
@@ -126,10 +114,14 @@ define(['backbone', 'utilities', 'require'], function (Backbone, utilities, requ
                 self.model.performance = _.find(selectedShow.performances, function (item) {
                     return item.id == self.model.performanceId;
                 });
-                utilities.applyTemplate($(self.el), $("#create-booking"), { show:selectedShow,
-                    performance:self.model.performance});
+                var id = function (item) {return item.id;};
+                // prepare a list of sections to populate the dropdown
+                var sections = _.uniq(_.sortBy(_.pluck(selectedShow.ticketPrices, 'section'), id), true, id);
+
+                utilities.applyTemplate($(self.el), createBookingTemplate, { show:selectedShow,
+                    performance:self.model.performance,
+                    sections:sections});
                 $(self.el).trigger('pagecreate');
-                self.selectorView = new SectionSelectorView({model:selectedShow, el:$("#sectionSelectorPlaceholder")}).render();
                 self.ticketCategoriesView = new TicketCategoriesView({model:{}, el:$("#ticketCategoriesViewPlaceholder") });
                 self.model.show = selectedShow;
                 self.ticketCategoriesView.render();
@@ -140,17 +132,17 @@ define(['backbone', 'utilities', 'require'], function (Backbone, utilities, requ
         },
         refreshPrices:function (event) {
             if (event.currentTarget.value != "Choose a section") {
-                var priceCategories = _.filter(this.model.show.priceCategories, function (item) {
+                var ticketPrices = _.filter(this.model.show.ticketPrices, function (item) {
                     return item.section.id == event.currentTarget.value;
                 });
-                var priceCategoryInputs = new Array();
-                _.each(priceCategories, function (priceCategory) {
+                var ticketPriceInputs = new Array();
+                _.each(ticketPrices, function (ticketPrice) {
                     var model = {};
-                    model.priceCategory = priceCategory;
-                    priceCategoryInputs.push(model);
+                    model.ticketPrice = ticketPrice;
+                    ticketPriceInputs.push(model);
                 });
                 $("#ticketCategoriesViewPlaceholder").show();
-                this.ticketCategoriesView.model = priceCategoryInputs;
+                this.ticketCategoriesView.model = ticketPriceInputs;
                 this.ticketCategoriesView.render();
                 $(this.el).trigger('pagecreate');
             } else {
@@ -169,7 +161,7 @@ define(['backbone', 'utilities', 'require'], function (Backbone, utilities, requ
             var totals = _.reduce(this.ticketCategoriesView.model, function (partial, model) {
                 if (model.quantity != undefined) {
                     partial.tickets += model.quantity;
-                    partial.price += model.quantity * model.priceCategory.price;
+                    partial.price += model.quantity * model.ticketPrice.price;
                     return partial;
                 }
             }, {tickets:0, price:0.0});
@@ -182,4 +174,5 @@ define(['backbone', 'utilities', 'require'], function (Backbone, utilities, requ
             }
         }
     });
+    return CreateBookingView;
 });

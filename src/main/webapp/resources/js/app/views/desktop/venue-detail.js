@@ -1,6 +1,20 @@
-define(['backbone', 'utilities', 'require', 'bootstrap'], function (Backbone, utilities, require) {
+define([
+    'backbone',
+    'utilities',
+    'require',
+    'text!../../../../templates/desktop/venue-detail.html',
+    'text!../../../../templates/desktop/media.html',
+    'text!../../../../templates/desktop/venue-event-description.html',
+    'bootstrap'
+], function (
+    Backbone,
+    utilities,
+    require,
+    venueDetailTemplate,
+    mediaTemplate,
+    venueEventDescriptionTemplate) {
 
-    return  Backbone.View.extend({
+    var VenueDetailView = Backbone.View.extend({
         events:{
             "click input[name='bookButton']":"beginBooking",
             "change select[id='eventSelector']":"refreshShows",
@@ -8,7 +22,7 @@ define(['backbone', 'utilities', 'require', 'bootstrap'], function (Backbone, ut
         },
         render:function () {
             $(this.el).empty()
-            utilities.applyTemplate($(this.el), $("#venue-detail"), this.model.attributes)
+            utilities.applyTemplate($(this.el), venueDetailTemplate, this.model.attributes)
             $("#eventSelector").attr('disabled', true)
             $("#bookingOption").hide()
             $("#dayPicker").empty()
@@ -39,13 +53,13 @@ define(['backbone', 'utilities', 'require', 'bootstrap'], function (Backbone, ut
                     return show.id == selectedShowId
                 });
                 this.selectedShow = selectedShow;
-                utilities.applyTemplate($("#venueEventDescription"), $("#venue-event-description"), {event:selectedShow.event});
+                utilities.applyTemplate($("#venueEventDescription"), venueEventDescriptionTemplate, {event:selectedShow.event});
                 var times = _.uniq(_.sortBy(_.map(selectedShow.performances, function (performance) {
                     return (new Date(performance.date).withoutTimeOfDay()).getTime()
                 }), function (item) {
                     return item
                 }));
-                utilities.applyTemplate($("#eventMedia"), $("#venue-media"), selectedShow.event)
+                utilities.applyTemplate($("#eventMedia"), mediaTemplate, selectedShow.event)
                 $("#dayPicker").removeAttr('disabled')
                 $("#performanceTimes").removeAttr('disabled')
                 _.each(times, function (time) {
@@ -80,7 +94,8 @@ define(['backbone', 'utilities', 'require', 'bootstrap'], function (Backbone, ut
             $("#bookingOption").show()
         }
 
-    })
+    });
 
+    return  VenueDetailView
 
 });

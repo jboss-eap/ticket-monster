@@ -1,9 +1,7 @@
 package org.jboss.jdf.example.ticketmonster.rest;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.ejb.Singleton;
 import javax.persistence.Query;
@@ -18,7 +16,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.jboss.jdf.example.ticketmonster.model.Show;
-import org.jboss.jdf.example.ticketmonster.model.TicketPriceCategory;
 
 /**
  * @author Marius Bogoevici
@@ -49,26 +46,6 @@ public class ShowService extends BaseEntityService<Show> {
             predicates.add(criteriaBuilder.equal(root.get("event").get("id"), event));
         }
         return predicates.toArray(new Predicate[]{});
-    }
-    
-    @GET
-    @Path("/{showId:[0-9][0-9]*}/pricing")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Map<Long,List<TicketPriceCategory>> getPricing(@PathParam("showId") Long showId) {
-        Query query = getEntityManager().createQuery("select pc from PriceCategory pc where pc.show.id = :showId order by pc.section.id");
-        query.setParameter("showId", showId);
-        
-        @SuppressWarnings("unchecked")
-        List<TicketPriceCategory> priceCategories = query.getResultList();
-        
-        Map<Long, List<TicketPriceCategory>> priceCategoryMap = new LinkedHashMap<Long, List<TicketPriceCategory>> ();
-        for (TicketPriceCategory priceCategory : priceCategories) {
-           if (!priceCategoryMap.containsKey(priceCategory.getSection().getId())) {
-               priceCategoryMap.put(priceCategory.getSection().getId(), new ArrayList<TicketPriceCategory>());
-           }
-           priceCategoryMap.get(priceCategory.getSection().getId()).add(priceCategory);
-        }
-        return priceCategoryMap;
     }
 
     @GET
