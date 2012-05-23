@@ -7,7 +7,7 @@
             %>
             <div class="accordion-group">
                 <div class="accordion-heading">
-                    <a class="accordion-toggle" style="color: #fff; background: #000;"
+                    <a class="accordion-toggle"
                        data-target="#category-<%=category.id%>-collapsible" data-toggle="collapse"
                        data-parent="#itemMenu"><%= category.description %></a>
                 </div>
@@ -18,7 +18,7 @@
                         _.each(model.models, function (model) {
                         if (model.get('category').id == category.id) {
                         %>
-                        <p><a href="#venues/<%=model.attributes.id%>" rel="popover"
+                        <p><a href="#events/<%=model.attributes.id%>" rel="popover"
                               data-content="<%=model.attributes.description%>"
                               data-original-title="<%=model.attributes.name%>"><%=model.attributes.name%></a></p>
                         <% }

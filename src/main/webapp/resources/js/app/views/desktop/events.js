@@ -1,8 +1,7 @@
 define([
     'backbone',
     'utilities',
-    'text!../../../../templates/desktop/events.html',
-    'backbone'
+    'text!../../../../templates/desktop/events.html'
 ], function (
     Backbone,
     utilities,
@@ -16,9 +15,9 @@ define([
             var categories = _.uniq(
                 _.map(this.model.models, function(model){
                     return model.get('category')
-                }, function(item){
+                }), false, function(item){
                     return item.id
-                }));
+                });
             utilities.applyTemplate($(this.el), eventsTemplate, {categories:categories, model:this.model})
             $(this.el).find('.item:first').addClass('active');
             $(".collapse").collapse()
